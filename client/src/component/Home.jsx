@@ -1,17 +1,31 @@
 import  {v4 as uuid} from "uuid"
 import { useState } from "react";
-
+import toast from "react-hot-toast";
+import {useNavigate} from "react-router-dom"
 
 
 const Home = () => {
     const [roomId,setRoomId]=useState("");
-    const [username,setUsername]=useState('');    
+    const [username,setUsername]=useState('');
+    const navigate=useNavigate();    
 
     const generateRoomId=(e)=>{
         e.preventDefault();
         const id=uuid();
         setRoomId(id);
+        toast.success("Room id is generated ")
     }
+     const joinRoom=()=>{
+        if(!roomId || !username)
+        {
+            toast.error("Please  fill the fields properly")
+            return;
+        }
+        navigate(`/editor/${roomId}`,{
+            state:{username},  
+        })
+        toast.success("room is Created ")
+     }
 
 
   return  <div className="container-fluid">
@@ -37,10 +51,13 @@ const Home = () => {
 
 
                      
-                           <input type="text" className=" form-control mb-2" placeholder="username" />
+                           <input  onChange={(e)=>setUsername(e.target.value)}
+                            type="text" 
+                             className=" form-control mb-2" 
+                             placeholder="username" />
 
                           </div>
-                          <button  className="btn btn-success btn-lg  btn-block">JOIN</button>
+                          <button  onClick={joinRoom} className="btn btn-success btn-lg  btn-block">JOIN</button>
                           <p className=" mt-3 text-white">Don&apos;t have a Room Id ? <span  
                             onClick={generateRoomId}
                            className="text-success p-2 " style={{cursor:"pointer"}}>New Room </span></p>
