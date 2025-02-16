@@ -1,9 +1,29 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Client from "./Client";
 import Editor from "./Editor";
+import {useLocation} from "react-router-dom"
+
+import { initSocket} from "../socket";
+import { useParams } from "react-router-dom";
 
 const EditorPage = () => {
 
+          const socketRef=useRef(null);
+          const location =useLocation()
+          const {roomId}=useParams();
+
+          useEffect(()=>{
+            const init=async()=>{
+              socketRef.current=await initSocket();
+              socketRef.current.emit('join',{
+                roomId,
+                username:location.state?.username||"guest"
+              })
+            }
+            init()
+          },[roomId,location.state])
+       
+        
        // eslint-disable-next-line no-unused-vars
        const[clients,setClient]=useState([ {
         socketId:1,username:"Aman singh" 

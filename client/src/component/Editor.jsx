@@ -7,6 +7,7 @@ import "codemirror/lib/codemirror.css";
 import CodeMirror from "codemirror";
 
 const Editor = () => {
+    // eslint-disable-next-line no-unused-vars
     const editorRef=useRef(null);
     useEffect(()=>{
         const init=async()=>{
