@@ -8,26 +8,30 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-// ✅ Add CORS to allow WebSocket connections from the frontend
 const io = new Server(server, {
-    cors: {
-        origin: "*", // Change this to your frontend URL in production
-        methods: ["GET", "POST"],
-    },
+  cors: {
+    origin: "http://localhost:5173", // Allow frontend URL
+    methods: ["GET", "POST"],
+  },
 });
+
+  const userSocketMap={};
+
 
 io.on("connection", (socket) => {
-    console.log(`User connected: ${socket.id}`);
+//   console.log(`User connected: ${socket.id}`);
+socket.on('join',({roomId,username})=>{
+           userSocketMap[socket.id]=username;//since every user has unique socket id so we have to map that  id 
+}) 
 
-    socket.on("join", ({ roomId, username }) => {
-        socket.join(roomId);
-        console.log(`${username} joined room ${roomId}`);
-    });
 
-    socket.on("disconnect", () => {
-        console.log("User disconnected:", socket.id);
-    });
+  socket.on("disconnect", () => {
+    console.log(`User disconnected: ${socket.id}`);
+  });
 });
 
+
+
+
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server is running at port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
