@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const BACKEND_URL = "http://localhost:5000"; // Ensure this matches your backend port
+// const BACKEND_URL = "http://localhost:5000"; // Ensure this matches your backend port
 
 export const initSocket = async () => {
   return io(import.meta.env.VITE_BACKEND_URL, {

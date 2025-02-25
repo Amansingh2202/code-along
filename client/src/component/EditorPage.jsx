@@ -8,13 +8,16 @@ import { useNavigate, useParams } from "react-router-dom";
 
 
 const EditorPage = () => {
-
+           
+  const[clients,setClient]=useState([])
           const socketRef=useRef(null);
+          const codeRef=useRef(null)
           const location =useLocation()
           const {roomId}=useParams();
           const navigate=useNavigate();
 
-
+             
+           
           useEffect(()=>{
             const init=async()=>{
               socketRef.current=await initSocket();
@@ -29,28 +32,72 @@ const EditorPage = () => {
                 roomId,
                 username:location.state?.username||"guest"
               })
+               
+             socketRef.current.emit("join",{
+              roomId,
+              username:location.state?.username,
+             })
+                
+             // eslint-disable-next-line no-unused-vars
+             socketRef.current.on('joined', ({ clients, username, socketId }) => {
+                    if(username!==location.state?.username)
+                    {
+                      toast.success(`${username} joined`)
+                    }
+                    setClient(clients) // displaying all clients in the existing room
+                     socketRef.current.emit('sync-code',{
+                      code:codeRef.current,
+                      socketId
+                     })
+                  });
+
+          
+            // if user is disconnected
+            socketRef.current.on("disconnected",({socketId,username})=>{
+              toast.success(`${username} leave the room`)
+              setClient((prev)=>{ // removing the client room the dashborad
+                return prev.filter(
+                  (client)=> client.socketId !=socketId 
+                )
+              })
+            })
+                       
+
+
             }
             init()
+
+            return ()=>{
+              socketRef.current.disconnect();
+              socketRef.current.off('joined');
+              socketRef.current.off('disconnected');
+            }
           },[roomId,location.state])
        
         
        // eslint-disable-next-line no-unused-vars
-       const[clients,setClient]=useState([ {
-        socketId:1,username:"Aman singh" 
-       },
-       {
-        socketId:2,username:"Arpita rai"
-       }
-       
-      ])
+      
+
 
       if(!location.state)
       {
         return navigate('/')
       }
+         
+       const copyRoomId=async()=>{
+        try{
+                             await navigator.clipboard.writeText(roomId);
+                             toast.success("Room id is copied")
+        }
+        catch(err){
+          toast.error("unable to copy room id")
+        }
+       }
+       const leaveRoom=()=>{
+        navigate("/")
+       }
 
-
-
+   
 
 
 
@@ -75,14 +122,16 @@ const EditorPage = () => {
        
           <div className="mb-5 mt-auto d-flex flex-column ">
           <hr/>
-            <button className="btn btn-success mb-2">Copy Room Id</button>
-            <button className="  btn btn-danger px-3 btn-block">Leave Room</button>
+            <button onClick={copyRoomId} className="btn btn-success mb-2">Copy Room Id</button>
+            <button onClick={leaveRoom}className="  btn btn-danger px-3 btn-block">Leave Room</button>
           </div>
         </div>
 
         {/* Editor */}
         <div className="col-md-10 text-light d-flex flex-column hh-100">
-          <Editor/>
+          <Editor socketRef={socketRef} roomId={roomId} onCodeChange={(code)=>{
+             codeRef.current=code 
+          }}/>
         </div>
       </div>
     </div>

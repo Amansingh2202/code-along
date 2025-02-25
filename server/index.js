@@ -17,17 +17,60 @@ const io = new Server(server, {
 
   const userSocketMap={};
 
+  const getAllConnectedClients = (roomId) => {
+    return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map((socketId) => {
+        return {
+            socketId,
+            username: userSocketMap[socketId],
+        };
+    }); 
+};
+
 
 io.on("connection", (socket) => {
 //   console.log(`User connected: ${socket.id}`);
 socket.on('join',({roomId,username})=>{
-           userSocketMap[socket.id]=username;//since every user has unique socket id so we have to map that  id 
+           userSocketMap[socket.id]=username;// now there are multiple users coming up with different  socket id , now we have to club them 
+           // into the same room id 
+           
+           socket.join(roomId)// if room if exist that will  put that into that room ... if not exist will create a new room
+
+           const clients=getAllConnectedClients(roomId);
+
+           clients.forEach(({socketId})=>{
+            io.to(socketId).emit('joined',{
+                clients,
+                username,
+                socketId:socket.id
+            })
+           })
 }) 
 
+     socket.on('code-change',({roomId,code})=>{
+      socket.in(roomId).emit('code-change',{ code});
+     })
+   
+    socket.on("sync-code",({socketId,code})=>{
+      io.to(socketId).emit("code-change",{code})
+    })  
+    //  // if new user is  joining he should get the existing code 
+ 
 
-  socket.on("disconnect", () => {
-    console.log(`User disconnected: ${socket.id}`);
+socket.on("disconnecting", () => {
+  const rooms = [...socket.rooms];     
+
+  rooms.forEach((roomId) => {
+      io.to(roomId).emit("disconnected", {
+          socketId: socket.id,
+          username: userSocketMap[socket.id], // Fixed `socketId`
+      });
+      socket.leave(roomId); // Fixed incorrect syntax
   });
+
+  delete userSocketMap[socket.id]; // Fixed typo
+});
+
+
 });
 
 
