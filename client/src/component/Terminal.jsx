@@ -4,7 +4,7 @@ import { FitAddon } from '@xterm/addon-fit'
 import { initSocket } from '../socket'
 import "@xterm/xterm/css/xterm.css";
 
-const Terminal = () => {
+const Terminal = ({ currentFile }) => {
 
     const TermRef=useRef()
     const isRendered=useRef(false);
@@ -97,7 +97,24 @@ const Terminal = () => {
     },[])
 
   return (
-    <div ref={TermRef} style={{height: "100%", width: "100%"}}></div>
+    <div style={{height: "100%", width: "100%", display: "flex", flexDirection: "column"}}>
+      {/* Terminal Header showing current file */}
+      <div style={{ 
+        backgroundColor: "#1e1e1e", 
+        color: "#cccccc", 
+        padding: "4px 12px", 
+        fontSize: "12px",
+        borderBottom: "1px solid #444",
+        display: "flex",
+        alignItems: "center"
+      }}>
+        <span style={{ marginRight: "8px" }}>📁</span>
+        <span>~/user/{currentFile || ""}</span>
+      </div>
+      
+      {/* Terminal Content */}
+      <div ref={TermRef} style={{height: "100%", width: "100%", flex: 1}}></div>
+    </div>
   )
 }
 

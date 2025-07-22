@@ -14,6 +14,7 @@ const EditorPage = () => {
   const[clients,setClient]=useState([])
   const[terminalHeight, setTerminalHeight] = useState(30) // Terminal height as percentage
   const[isTerminalCollapsed, setIsTerminalCollapsed] = useState(false) // Track if terminal is collapsed
+  const[currentFile, setCurrentFile] = useState("") // Track current selected file
   const socketRef=useRef(null);
   const codeRef=useRef(null)
   const location =useLocation()
@@ -155,6 +156,12 @@ const EditorPage = () => {
          document.addEventListener('mouseup', handleMouseUp);
        };
 
+       // Function to handle file selection
+       const handleFileSelect = (filePath) => {
+         setCurrentFile(filePath);
+         console.log('Selected file:', filePath);
+       };
+
        // Function to toggle terminal visibility
        const toggleTerminal = () => {
          // Prevent toggle if we just finished resizing
@@ -185,7 +192,7 @@ const EditorPage = () => {
           
           {/* File Tree */}
           <div className="flex-grow-1 overflow-auto">
-            <FileTree tree={filetree} />
+            <FileTree tree={filetree} onFileSelect={handleFileSelect} />
           </div>
 
           {/* Client list container */}
@@ -209,6 +216,20 @@ const EditorPage = () => {
 
         {/* Editor and Terminal */}
         <div className="col-md-10 d-flex flex-column h-100">
+          {/* Current File Header */}
+          <div style={{ 
+            backgroundColor: "#2d2d30", 
+            color: "#cccccc", 
+            padding: "8px 16px", 
+            fontSize: "14px",
+            borderBottom: "1px solid #444",
+            display: "flex",
+            alignItems: "center"
+          }}>
+            <span style={{ marginRight: "8px" }}>📄</span>
+            <span>{currentFile || "No file selected"}</span>
+          </div>
+          
           <div className="flex-grow-1" style={{ height: `${100 - terminalHeight}%`, minHeight: "0", overflow: "hidden" }}>
             <Editor socketRef={socketRef} roomId={roomId} onCodeChange={(code)=>{
                codeRef.current=code 
@@ -272,7 +293,7 @@ const EditorPage = () => {
           
           {!isTerminalCollapsed && (
             <div style={{ height: `${terminalHeight}%`, backgroundColor: "#1e1e1e", minHeight: "0", overflow: "hidden" }}>
-              <Terminal />
+              <Terminal currentFile={currentFile} />
             </div>
           )}
         </div>
