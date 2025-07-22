@@ -2,11 +2,23 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const dotenv = require("dotenv");
+const pty = require('node-pty');
+
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+
+var ptyProcess = pty.spawn('bash', [], {
+  name: 'xterm-color',
+  cols: 80,
+  rows: 30,
+  cwd: process.env.INIT_CWD,
+  env: process.env
+});
+
+
 
 const io = new Server(server, {
   cors: {
@@ -25,6 +37,12 @@ const io = new Server(server, {
         };
     }); 
 };
+
+// io.attach(server);
+
+ptyProcess.onData((data) => {
+  io.emit('terminal:data', data);
+});
 
 
 io.on("connection", (socket) => {
@@ -54,6 +72,10 @@ socket.on('join',({roomId,username})=>{
       io.to(socketId).emit("code-change",{code})
     })  
     //  // if new user is  joining he should get the existing code 
+
+    socket.on('terminal:write',(data)=>{
+        ptyProcess.write(data);
+    })
  
 
 socket.on("disconnecting", () => {
