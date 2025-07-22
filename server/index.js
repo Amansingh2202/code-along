@@ -1,8 +1,11 @@
 const express = require("express");
 const http = require("http");
+const fs = require("fs/promises");
 const { Server } = require("socket.io");
 const dotenv = require("dotenv");
 const pty = require('node-pty');
+const path = require("path");
+const cors = require("cors");
 
 
 dotenv.config();
@@ -10,12 +13,14 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
+app.use(cors())
+
 var ptyProcess = pty.spawn('bash', [], {
   name: 'xterm-color',
   cols: 80,
   rows: 30,
-  cwd: process.env.INIT_CWD,
-  env: process.env
+  cwd: process.env.INIT_CWD + '/user',
+  env: process.env 
 });
 
 
@@ -96,7 +101,59 @@ socket.on("disconnecting", () => {
 });
 
 
+app.get("/files",async (req,res)=>{
+  try {
+    const fileTree=await generatetree(path.join(__dirname, 'user'));
+    return res.json({tree:fileTree});
+  } catch (error) {
+    console.error('Error generating file tree:', error);
+    return res.status(500).json({error: 'Failed to generate file tree', tree: {}});
+  }
+})
 
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+
+async function generatetree(directory) {
+  const tree={}
+
+  async function buildtree(currentDir,currentTree) {
+    try {
+      const files= await fs.readdir(currentDir);
+
+      for(const file of files){
+        const filePath=path.join(currentDir,file);
+        
+        try {
+          const stats=await fs.stat(filePath);
+
+          if(stats.isDirectory()){
+            currentTree[file]={};
+            await buildtree(filePath,currentTree[file]);
+          }else{
+            currentTree[file]=null;
+          }
+        } catch (error) {
+          console.error(`Error processing file ${filePath}:`, error);
+          // Skip this file and continue
+        }
+      }
+    } catch (error) {
+      console.error(`Error reading directory ${currentDir}:`, error);
+      throw error;
+    }
+  }
+
+  // Check if directory exists first
+  try {
+    await fs.access(directory);
+    await buildtree(directory,tree);
+  } catch (error) {
+    console.error(`Directory ${directory} does not exist or is not accessible:`, error);
+    throw error;
+  }
+  
+  return tree;
+}

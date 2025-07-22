@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { initSocket} from "../socket";
 import { useNavigate, useParams } from "react-router-dom";
 import Terminal from "./Terminal";
+import FileTree from "./FileTree";
 
 
 const EditorPage = () => {
@@ -21,6 +22,18 @@ const EditorPage = () => {
   const isResizing = useRef(false);
   const justFinishedResizing = useRef(false);
 
+  const [filetree, setFiletree] = useState({})
+
+  const getFiletree=async ()=>{
+    const response = await fetch('http://localhost:5000/files')
+    const result=await response.json()
+    setFiletree(result.tree)
+  }
+
+  useEffect(() => {
+    getFiletree()
+  }, [])
+  
              
            
           useEffect(()=>{
@@ -165,25 +178,32 @@ const EditorPage = () => {
       <div className="row h-100">
 
         <div className="col-md-2 bg-dark text-light d-flex flex-column h-100" style={{ boxShadow: "2px 0px 4px rgba(0,0,0.1)" }}>
+          
+          {/* Title at the top */}
           <h1 className="p-4 text-info" style={{ marginLeft: "7px" }}>Code-along</h1>
           <hr style={{ marginTop: "1rem" }} />
           
+          {/* File Tree */}
+          <div className="flex-grow-1 overflow-auto">
+            <FileTree tree={filetree} />
+          </div>
+
           {/* Client list container */}
-          <div className="d-flex flex-column overflow-auto flex-grow-1">
+          <div className="d-flex flex-column overflow-auto" style={{ maxHeight: "200px" }}>
               {
                 clients.map((client)=>(
                   <Client key={client.socketId} username={client.username}/>
                 ))
               }
-
           </div>
 
           {/* Buttons at the bottom */}
-       
-          <div className="mb-5 mt-auto d-flex flex-column ">
-          <hr/>
-            <button onClick={copyRoomId} className="btn btn-success mb-2">Copy Room Id</button>
-            <button onClick={leaveRoom}className="  btn btn-danger px-3 btn-block">Leave Room</button>
+          <div className="mt-auto mb-3">
+            <hr/>
+            <div className="d-flex flex-column px-2">
+              <button onClick={copyRoomId} className="btn btn-success mb-2">Copy Room Id</button>
+              <button onClick={leaveRoom} className="btn btn-danger">Leave Room</button>
+            </div>
           </div>
         </div>
 
