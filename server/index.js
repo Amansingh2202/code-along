@@ -25,7 +25,12 @@ var ptyProcess = pty.spawn('bash', [], {
 });
 
 
-
+app.use('/',(req,res)=>{
+  return res.status.json({
+    message: "Welcome to the Code Along Server",
+    status: "success"
+  })
+})
 const io = new Server(server, {
   cors: {
     origin: "https://code-along-52s1.vercel.app/", // Allow frontend URL
