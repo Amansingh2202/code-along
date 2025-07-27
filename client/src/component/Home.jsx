@@ -15,6 +15,8 @@ const Home = () => {
         setRoomId(id);
         toast.success("Room id is generated ")
     }
+
+    
      const joinRoom=()=>{
         if(!roomId || !username)
         {
