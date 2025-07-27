@@ -28,7 +28,7 @@ var ptyProcess = pty.spawn('bash', [], {
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Allow frontend URL
+    origin: "https://code-along-52s1.vercel.app/", // Allow frontend URL
     methods: ["GET", "POST"],
   },
 });
