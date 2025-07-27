@@ -12,6 +12,20 @@ const Terminal = ({ currentFile }) => {
     const fitAddonRef=useRef(null);
     const socketRef=useRef(null);
 
+    const handleRunCode = () => {
+        if (socketRef.current && currentFile && currentFile.endsWith('.cpp')) {
+            // Clear terminal first
+            if (terminalRef.current) {
+                terminalRef.current.clear();
+            }
+            
+            // Send compile and run commands
+            const fileName = currentFile.replace('.cpp', '');
+            const compileCommand = `g++ -o ${fileName} ${currentFile} && ./${fileName}\r`;
+            socketRef.current.emit('terminal:write', compileCommand);
+        }
+    };
+
     useEffect(()=>{
         if(isRendered.current) return;
         isRendered.current=true;
@@ -98,7 +112,7 @@ const Terminal = ({ currentFile }) => {
 
   return (
     <div style={{height: "100%", width: "100%", display: "flex", flexDirection: "column"}}>
-      {/* Terminal Header showing current file */}
+      {/* Terminal Header showing current file and run button */}
       <div style={{ 
         backgroundColor: "#1e1e1e", 
         color: "#cccccc", 
@@ -106,10 +120,35 @@ const Terminal = ({ currentFile }) => {
         fontSize: "12px",
         borderBottom: "1px solid #444",
         display: "flex",
-        alignItems: "center"
+        alignItems: "center",
+        justifyContent: "space-between"
       }}>
-        <span style={{ marginRight: "8px" }}>📁</span>
-        <span>~/user/{currentFile || ""}</span>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span style={{ marginRight: "8px" }}>📁</span>
+          <span>~/user/{currentFile || ""}</span>
+        </div>
+        
+        {currentFile && currentFile.endsWith('.cpp') && (
+          <button
+            onClick={handleRunCode}
+            style={{
+              backgroundColor: "#007acc",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              padding: "4px 12px",
+              fontSize: "12px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px"
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = "#005a9e"}
+            onMouseLeave={(e) => e.target.style.backgroundColor = "#007acc"}
+          >
+            ▶️ Run Code
+          </button>
+        )}
       </div>
       
       {/* Terminal Content */}

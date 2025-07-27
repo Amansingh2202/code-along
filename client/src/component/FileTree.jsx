@@ -1,7 +1,6 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
 
-const FileTreeNode =({ fileName, nodes, onFileSelect, currentPath = "" }) =>{
+const FileTreeNode = ({ fileName, nodes, onFileSelect, currentPath = "" }) => {
     const isDirectory = nodes !== null;
     const fullPath = currentPath ? `${currentPath}/${fileName}` : fileName;
     
@@ -68,17 +67,29 @@ const FileTree = ({ tree, onFileSelect }) => {
       }}>
         FILES
       </div>
-      <ul style={{ listStyle: "none", paddingLeft: "0", margin: "0" }}>  
-        {tree && Object.keys(tree).map((child) => (
-          <li key={child}>
-            <FileTreeNode 
-              fileName={child} 
-              nodes={tree[child]} 
-              onFileSelect={onFileSelect}
-            />
-          </li>
-        ))}
-      </ul>
+      
+      {!tree || Object.keys(tree).length === 0 ? (
+        <div style={{ 
+          color: "#888", 
+          fontStyle: "italic", 
+          textAlign: "center",
+          padding: "20px 0"
+        }}>
+          Loading files...
+        </div>
+      ) : (
+        <ul style={{ listStyle: "none", paddingLeft: "0", margin: "0" }}>  
+          {Object.keys(tree).map((child) => (
+            <li key={child}>
+              <FileTreeNode 
+                fileName={child} 
+                nodes={tree[child]} 
+                onFileSelect={onFileSelect}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

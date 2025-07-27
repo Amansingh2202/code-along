@@ -7,13 +7,14 @@ const pty = require('node-pty');
 const path = require("path");
 const cors = require("cors");
 
-
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 
-app.use(cors())
+// Middleware
+app.use(cors());
+app.use(express.json());
 
 var ptyProcess = pty.spawn('bash', [], {
   name: 'xterm-color',
@@ -110,6 +111,84 @@ app.get("/files",async (req,res)=>{
     return res.status(500).json({error: 'Failed to generate file tree', tree: {}});
   }
 })
+
+// Create a new file
+app.post("/files/create", async (req, res) => {
+  try {
+    const { filePath, content = "" } = req.body;
+    const fullPath = path.join(__dirname, 'user', filePath);
+    
+    // Create directory if it doesn't exist
+    await fs.mkdir(path.dirname(fullPath), { recursive: true });
+    
+    // Create the file
+    await fs.writeFile(fullPath, content);
+    
+    res.json({ success: true, message: "File created successfully" });
+  } catch (error) {
+    console.error('Error creating file:', error);
+    res.status(500).json({ error: "Failed to create file" });
+  }
+});
+
+// Create a new folder
+app.post("/files/createFolder", async (req, res) => {
+  try {
+    const { folderPath } = req.body;
+    const fullPath = path.join(__dirname, 'user', folderPath);
+    
+    await fs.mkdir(fullPath, { recursive: true });
+    
+    res.json({ success: true, message: "Folder created successfully" });
+  } catch (error) {
+    console.error('Error creating folder:', error);
+    res.status(500).json({ error: "Failed to create folder" });
+  }
+});
+
+// Read file content
+app.get("/files/read/:filePath(*)", async (req, res) => {
+  try {
+    const filePath = req.params.filePath;
+    const fullPath = path.join(__dirname, 'user', filePath);
+    
+    const content = await fs.readFile(fullPath, 'utf-8');
+    res.json({ content });
+  } catch (error) {
+    console.error('Error reading file:', error);
+    res.status(500).json({ error: "Failed to read file" });
+  }
+});
+
+// Save file content
+app.post("/files/save", async (req, res) => {
+  try {
+    const { filePath, content } = req.body;
+    const fullPath = path.join(__dirname, 'user', filePath);
+    
+    await fs.writeFile(fullPath, content);
+    res.json({ success: true, message: "File saved successfully" });
+  } catch (error) {
+    console.error('Error saving file:', error);
+    res.status(500).json({ error: "Failed to save file" });
+  }
+});
+
+// Check if g++ is installed
+app.get("/check-compiler", async (req, res) => {
+  try {
+    const { exec } = require('child_process');
+    exec('g++ --version', (error, stdout, stderr) => {
+      if (error) {
+        res.json({ installed: false, message: "g++ not found" });
+      } else {
+        res.json({ installed: true, version: stdout.split('\n')[0] });
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to check compiler" });
+  }
+});
 
 
 const PORT = process.env.PORT || 5000;

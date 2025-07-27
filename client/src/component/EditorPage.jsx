@@ -15,6 +15,7 @@ const EditorPage = () => {
   const[terminalHeight, setTerminalHeight] = useState(30) // Terminal height as percentage
   const[isTerminalCollapsed, setIsTerminalCollapsed] = useState(false) // Track if terminal is collapsed
   const[currentFile, setCurrentFile] = useState("") // Track current selected file
+  const[fileContent, setFileContent] = useState("") // Store current file content
   const socketRef=useRef(null);
   const codeRef=useRef(null)
   const location =useLocation()
@@ -31,8 +32,46 @@ const EditorPage = () => {
     setFiletree(result.tree)
   }
 
+  // Function to handle file selection and load content
+  const handleFileSelect = async (filePath) => {
+    setCurrentFile(filePath);
+    try {
+      const response = await fetch(`http://localhost:5000/files/read/${filePath}`);
+      const result = await response.json();
+      if (response.ok) {
+        setFileContent(result.content);
+      }
+    } catch (error) {
+      console.error('Error loading file content:', error);
+    }
+  };
+
+  // Function to save file content
+  const handleSaveFile = async (content) => {
+    if (!currentFile) return;
+    
+    try {
+      const response = await fetch('http://localhost:5000/files/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filePath: currentFile, content })
+      });
+      
+      if (response.ok) {
+        console.log('File saved successfully');
+        setFileContent(content);
+      }
+    } catch (error) {
+      console.error('Error saving file:', error);
+    }
+  };
+
+  const editorRef = useRef(null);
+
   useEffect(() => {
     getFiletree()
+    // Automatically load main.cpp
+    handleFileSelect('main.cpp')
   }, [])
   
              
@@ -156,12 +195,6 @@ const EditorPage = () => {
          document.addEventListener('mouseup', handleMouseUp);
        };
 
-       // Function to handle file selection
-       const handleFileSelect = (filePath) => {
-         setCurrentFile(filePath);
-         console.log('Selected file:', filePath);
-       };
-
        // Function to toggle terminal visibility
        const toggleTerminal = () => {
          // Prevent toggle if we just finished resizing
@@ -231,9 +264,15 @@ const EditorPage = () => {
           </div>
           
           <div className="flex-grow-1" style={{ height: `${100 - terminalHeight}%`, minHeight: "0", overflow: "hidden" }}>
-            <Editor socketRef={socketRef} roomId={roomId} onCodeChange={(code)=>{
-               codeRef.current=code 
-            }}/>
+            <Editor 
+              socketRef={socketRef} 
+              roomId={roomId} 
+              onCodeChange={(code)=>{
+                codeRef.current=code 
+              }}
+              fileContent={fileContent}
+              onSaveFile={handleSaveFile}
+            />
           </div>
           
           {/* Resizer or Toggle Button */}

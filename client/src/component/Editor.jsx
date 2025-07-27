@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useRef,useEffect } from "react";
-import "codemirror/mode/javascript/javascript";
+import "codemirror/mode/clike/clike";
 import "codemirror/theme/dracula.css";
 import "codemirror/addon/edit/closetag";
 import "codemirror/addon/edit/closebrackets";
@@ -8,7 +8,7 @@ import "codemirror/lib/codemirror.css";
 import CodeMirror from "codemirror";
 
 // eslint-disable-next-line react/prop-types
-const Editor = ({socketRef,roomId,onCodeChange}) => {
+const Editor = ({socketRef,roomId,onCodeChange,fileContent,onSaveFile}) => {
     // eslint-disable-next-line no-unused-vars
     const editorRef=useRef(null);
     
@@ -18,7 +18,7 @@ const Editor = ({socketRef,roomId,onCodeChange}) => {
                          const editor=CodeMirror.fromTextArea(
                          document.getElementById("realTimeEditor"),
                             {
-                                mode:{name:"javascript",json:true},
+                                mode:"text/x-c++src",
                                 theme:"dracula",
                                 autoCloseTags:true,
                                 autoCloseBrackets:true,
@@ -34,6 +34,11 @@ const Editor = ({socketRef,roomId,onCodeChange}) => {
                          const code=instance.getValue();      // code that is being getting written on the code-mirror
                             
                          onCodeChange(code)
+                         
+                         // Auto-save file content if onSaveFile is provided
+                         if(onSaveFile && origin !== "setValue") {
+                           onSaveFile(code);
+                         }
                          
                          if(origin!=="setValue")
                           {
@@ -69,6 +74,13 @@ const Editor = ({socketRef,roomId,onCodeChange}) => {
       }
     // eslint-disable-next-line react/prop-types
     },[socketRef.current])
+
+    // Update editor content when fileContent prop changes
+    useEffect(() => {
+      if(editorRef.current && fileContent !== undefined) {
+        editorRef.current.setValue(fileContent || '');
+      }
+    }, [fileContent]);
 
   return (
     <div style={{height:"100%", overflow: "hidden"}}>
