@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { initSocket} from "../socket";
 import { useNavigate, useParams } from "react-router-dom";
 import Terminal from "./Terminal";
+import FileTree from "./FileTree";
 
 
 const EditorPage = () => {
@@ -13,6 +14,8 @@ const EditorPage = () => {
   const[clients,setClient]=useState([])
   const[terminalHeight, setTerminalHeight] = useState(30) // Terminal height as percentage
   const[isTerminalCollapsed, setIsTerminalCollapsed] = useState(false) // Track if terminal is collapsed
+  const[currentFile, setCurrentFile] = useState("") // Track current selected file
+  const[fileContent, setFileContent] = useState("") // Store current file content
   const socketRef=useRef(null);
   const codeRef=useRef(null)
   const location =useLocation()
@@ -21,6 +24,56 @@ const EditorPage = () => {
   const isResizing = useRef(false);
   const justFinishedResizing = useRef(false);
 
+  const [filetree, setFiletree] = useState({})
+
+  const getFiletree=async ()=>{
+    const response = await fetch('http://localhost:5000/files')
+    const result=await response.json()
+    setFiletree(result.tree)
+  }
+
+  // Function to handle file selection and load content
+  const handleFileSelect = async (filePath) => {
+    setCurrentFile(filePath);
+    try {
+      const response = await fetch(`http://localhost:5000/files/read/${filePath}`);
+      const result = await response.json();
+      if (response.ok) {
+        setFileContent(result.content);
+      }
+    } catch (error) {
+      console.error('Error loading file content:', error);
+    }
+  };
+
+  // Function to save file content
+  const handleSaveFile = async (content) => {
+    if (!currentFile) return;
+    
+    try {
+      const response = await fetch('http://localhost:5000/files/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filePath: currentFile, content })
+      });
+      
+      if (response.ok) {
+        console.log('File saved successfully');
+        setFileContent(content);
+      }
+    } catch (error) {
+      console.error('Error saving file:', error);
+    }
+  };
+
+  const editorRef = useRef(null);
+
+  useEffect(() => {
+    getFiletree()
+    // Automatically load main.cpp
+    handleFileSelect('main.cpp')
+  }, [])
+  
              
            
           useEffect(()=>{
@@ -165,34 +218,61 @@ const EditorPage = () => {
       <div className="row h-100">
 
         <div className="col-md-2 bg-dark text-light d-flex flex-column h-100" style={{ boxShadow: "2px 0px 4px rgba(0,0,0.1)" }}>
+          
+          {/* Title at the top */}
           <h1 className="p-4 text-info" style={{ marginLeft: "7px" }}>Code-along</h1>
           <hr style={{ marginTop: "1rem" }} />
           
+          {/* File Tree */}
+          <div className="flex-grow-1 overflow-auto">
+            <FileTree tree={filetree} onFileSelect={handleFileSelect} />
+          </div>
+
           {/* Client list container */}
-          <div className="d-flex flex-column overflow-auto flex-grow-1">
+          <div className="d-flex flex-column overflow-auto" style={{ maxHeight: "200px" }}>
               {
                 clients.map((client)=>(
                   <Client key={client.socketId} username={client.username}/>
                 ))
               }
-
           </div>
 
           {/* Buttons at the bottom */}
-       
-          <div className="mb-5 mt-auto d-flex flex-column ">
-          <hr/>
-            <button onClick={copyRoomId} className="btn btn-success mb-2">Copy Room Id</button>
-            <button onClick={leaveRoom}className="  btn btn-danger px-3 btn-block">Leave Room</button>
+          <div className="mt-auto mb-3">
+            <hr/>
+            <div className="d-flex flex-column px-2">
+              <button onClick={copyRoomId} className="btn btn-success mb-2">Copy Room Id</button>
+              <button onClick={leaveRoom} className="btn btn-danger">Leave Room</button>
+            </div>
           </div>
         </div>
 
         {/* Editor and Terminal */}
         <div className="col-md-10 d-flex flex-column h-100">
+          {/* Current File Header */}
+          <div style={{ 
+            backgroundColor: "#2d2d30", 
+            color: "#cccccc", 
+            padding: "8px 16px", 
+            fontSize: "14px",
+            borderBottom: "1px solid #444",
+            display: "flex",
+            alignItems: "center"
+          }}>
+            <span style={{ marginRight: "8px" }}>📄</span>
+            <span>{currentFile || "No file selected"}</span>
+          </div>
+          
           <div className="flex-grow-1" style={{ height: `${100 - terminalHeight}%`, minHeight: "0", overflow: "hidden" }}>
-            <Editor socketRef={socketRef} roomId={roomId} onCodeChange={(code)=>{
-               codeRef.current=code 
-            }}/>
+            <Editor 
+              socketRef={socketRef} 
+              roomId={roomId} 
+              onCodeChange={(code)=>{
+                codeRef.current=code 
+              }}
+              fileContent={fileContent}
+              onSaveFile={handleSaveFile}
+            />
           </div>
           
           {/* Resizer or Toggle Button */}
@@ -252,7 +332,7 @@ const EditorPage = () => {
           
           {!isTerminalCollapsed && (
             <div style={{ height: `${terminalHeight}%`, backgroundColor: "#1e1e1e", minHeight: "0", overflow: "hidden" }}>
-              <Terminal />
+              <Terminal currentFile={currentFile} />
             </div>
           )}
         </div>
